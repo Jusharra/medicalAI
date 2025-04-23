@@ -1,0 +1,190 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-luxury-50;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-heading;
+  }
+
+  p, span, div {
+    @apply text-body;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-luxury-500 text-white hover:bg-luxury-600 transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply bg-gold-500 text-navy-900 hover:bg-gold-600 transition-colors;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-luxury-500 text-luxury-500 hover:bg-luxury-50 transition-colors;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-luxury hover:shadow-luxury-lg transition-all duration-300;
+  }
+  
+  .input-field {
+    @apply border border-gray-200 rounded-lg focus:ring-2 focus:ring-luxury-500 focus:border-transparent;
+  }
+  
+  .section-container {
+    @apply max-w-container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .heading-primary {
+    @apply text-3xl md:text-4xl font-display font-bold text-heading;
+  }
+  
+  .heading-secondary {
+    @apply text-2xl font-display font-semibold text-heading;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-luxury-gradient;
+  }
+
+  /* Responsive container classes */
+  .container-sm {
+    @apply max-w-screen-sm mx-auto px-4;
+  }
+  
+  .container-md {
+    @apply max-w-screen-md mx-auto px-4 sm:px-6;
+  }
+  
+  .container-lg {
+    @apply max-w-screen-lg mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .container-xl {
+    @apply max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .container-2xl {
+    @apply max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Responsive grid layouts */
+  .grid-responsive-2 {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6;
+  }
+  
+  .grid-responsive-3 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6;
+  }
+  
+  .grid-responsive-4 {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6;
+  }
+  
+  /* Responsive spacing */
+  .responsive-p {
+    @apply p-4 sm:p-6 lg:p-8;
+  }
+  
+  .responsive-py {
+    @apply py-4 sm:py-6 lg:py-8;
+  }
+  
+  .responsive-px {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Responsive text */
+  .responsive-text-lg {
+    @apply text-base sm:text-lg lg:text-xl;
+  }
+  
+  .responsive-text-xl {
+    @apply text-lg sm:text-xl lg:text-2xl;
+  }
+  
+  .responsive-text-2xl {
+    @apply text-xl sm:text-2xl lg:text-3xl;
+  }
+}
+
+/* Slideshow animation */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.slide-enter {
+  animation: fadeIn 1s forwards;
+}
+
+.slide-exit {
+  animation: fadeOut 1s forwards;
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .hide-on-tablet {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .hide-on-desktop {
+    display: none !important;
+  }
+}
+
+/* Responsive table */
+.responsive-table {
+  @apply w-full;
+}
+
+@media (max-width: 768px) {
+  .responsive-table thead {
+    @apply hidden;
+  }
+  
+  .responsive-table tbody tr {
+    @apply block border-b border-gray-200 py-4;
+  }
+  
+  .responsive-table tbody td {
+    @apply block text-right py-2 px-4 before:content-[attr(data-label)] before:float-left before:font-medium before:text-gray-700;
+  }
+}
+
+/* Fix for sidebar menu */
+@media (max-width: 1023px) {
+  .sidebar-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-50 z-40;
+  }
+}
+
+/* Ensure sidebar is always visible on larger screens */
+@media (min-width: 1024px) {
+  .lg\:translate-x-0 {
+    transform: translateX(0) !important;
+  }
+}
