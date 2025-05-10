@@ -215,7 +215,13 @@ export default function AuthForm() {
         }
 
         const { error: signUpError } = await signUp(email, password, fullName);
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          if (signUpError.message.includes('already registered')) {
+            throw new Error('This email is already registered. Please sign in instead.');
+          } else {
+            throw signUpError;
+          }
+        }
         
         toast.success('Registration successful! Please check your email to confirm your account.');
         navigate('/signin');
@@ -225,7 +231,13 @@ export default function AuthForm() {
         }
 
         const { error: signInError } = await signIn(email, password);
-        if (signInError) throw signInError;
+        if (signInError) {
+          if (signInError.message.includes('Invalid login credentials')) {
+            throw new Error('Invalid email or password. Please try again.');
+          } else {
+            throw signInError;
+          }
+        }
         
         toast.success('Successfully signed in!');
         navigate('/dashboard');

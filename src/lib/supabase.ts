@@ -36,6 +36,12 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         try {
           const response = await fetch(url, config);
           if (!response.ok) {
+            console.error(`HTTP error! status: ${response.status}`, {
+              url: url.toString(),
+              status: response.status,
+              statusText: response.statusText,
+              attempt: attempt + 1
+            });
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           return response;
@@ -115,7 +121,7 @@ export const checkSupabaseConnection = async (retries = 3, delay = 1000) => {
     try {
       // Try a simple query to check connection
       const { error } = await supabase
-        .from('profiles')
+        .from('users')
         .select('id', { count: 'exact', head: true });
         
       if (error) {

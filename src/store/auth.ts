@@ -58,7 +58,14 @@ export const useAuthStore = create<AuthState>((set) => ({
         password
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Sign in error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
+        throw error;
+      }
 
       if (!data.user) {
         throw new Error('No user data returned');

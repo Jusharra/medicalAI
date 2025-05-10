@@ -8,7 +8,7 @@ import { toast } from 'react-hot-toast';
 
 interface Profile {
   id: string;
-  email: string;
+  full_name?: string;
   avatar_url: string | null;
 }
 
@@ -52,29 +52,59 @@ export default function Navbar() {
     try {
       console.log('Attempting to load profile for user:', user.id);
       
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email, avatar_url')
+      // First try to get profile from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, full_name, avatar_url')
         .eq('id', user.id)
         .maybeSingle();
 
-      if (error) {
-        console.error('Supabase profile load error:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
+      if (userError) {
+        console.error('Supabase users query error:', {
+          message: userError.message,
+          details: userError.details,
+          hint: userError.hint,
+          code: userError.code
         });
-        toast.error(`Failed to load profile: ${error.message}`);
-        throw error;
-      }
-
-      if (data) {
-        console.log('Profile loaded successfully:', data);
-        setProfile(data);
+        
+        // If users table fails, try profiles table as fallback
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+          
+        if (profileError) {
+          console.error('Supabase profiles query error:', {
+            message: profileError.message,
+            details: profileError.details,
+            hint: profileError.hint,
+            code: profileError.code
+          });
+          throw new Error(`Failed to load profile: ${profileError.message}`);
+        }
+        
+        if (profileData) {
+          console.log('Profile loaded from profiles table:', profileData);
+          setProfile(profileData);
+        } else {
+          console.warn('No profile found in either table for user:', user.id);
+          // Create a minimal profile with just the ID
+          setProfile({
+            id: user.id,
+            avatar_url: null
+          });
+        }
+      } else if (userData) {
+        console.log('Profile loaded from users table:', userData);
+        setProfile(userData);
       } else {
-        console.warn('No profile found for user:', user.id);
-        toast.error('Profile not found');
+        console.warn('No profile found in users table for user:', user.id);
+        // Create a minimal profile with just the ID
+        setProfile({
+          id: user.id,
+          avatar_url: null
+        });
       }
     } catch (error) {
       console.error('Error in loadProfile:', {
