@@ -70,7 +70,7 @@ export default function LogsAuditTrail() {
         .from('logs')
         .select(`
           *,
-          user:user_id (
+          users!logs_user_id_fkey (
             email,
             role
           )
@@ -86,7 +86,7 @@ export default function LogsAuditTrail() {
       }
       
       if (userRoleFilter) {
-        query = query.eq('user.role', userRoleFilter);
+        query = query.eq('users.role', userRoleFilter);
       }
       
       // Apply date range filter
@@ -106,13 +106,16 @@ export default function LogsAuditTrail() {
       // Execute query
       const { data, error, count } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching logs:', error);
+        throw error;
+      }
       
       // Transform data to include user email and role
       const transformedData = data?.map(log => ({
         ...log,
-        user_email: log.user?.email,
-        user_role: log.user?.role
+        user_email: log.users?.email,
+        user_role: log.users?.role
       })) || [];
       
       setLogs(transformedData);
@@ -120,6 +123,10 @@ export default function LogsAuditTrail() {
     } catch (error) {
       console.error('Error loading logs:', error);
       toast.error('Failed to load audit logs');
+      
+      // Set empty logs if there's an error
+      setLogs([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
@@ -180,7 +187,7 @@ export default function LogsAuditTrail() {
         .from('logs')
         .select(`
           *,
-          user:user_id (
+          users!logs_user_id_fkey (
             email,
             role
           )
@@ -196,7 +203,7 @@ export default function LogsAuditTrail() {
       }
       
       if (userRoleFilter) {
-        query = query.eq('user.role', userRoleFilter);
+        query = query.eq('users.role', userRoleFilter);
       }
       
       // Apply date range filter
@@ -220,8 +227,8 @@ export default function LogsAuditTrail() {
       const exportData = data?.map(log => ({
         id: log.id,
         timestamp: new Date(log.timestamp).toLocaleString(),
-        user_email: log.user?.email || 'Unknown',
-        user_role: log.user?.role || 'Unknown',
+        user_email: log.users?.email || 'Unknown',
+        user_role: log.users?.role || 'Unknown',
         action: log.action,
         table_name: log.table_name,
         record_id: log.record_id,

@@ -11,11 +11,11 @@ interface User {
   role: string;
   created_at: string;
   status?: string;
+  full_name?: string;
 }
 
 interface Profile {
   id: string;
-  email: string;
   full_name?: string;
   avatar_url?: string;
 }
@@ -83,7 +83,7 @@ export default function RewardsManagement() {
       
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id, email, full_name, avatar_url')
+        .select('id, full_name, avatar_url')
         .in('id', userIds);
       
       if (profileError) throw profileError;
@@ -246,7 +246,7 @@ export default function RewardsManagement() {
             <Users className="h-5 w-5 text-navy-600" />
           </div>
           <div className="ml-4">
-            <div className="text-sm font-medium text-navy-900">{row.profile?.full_name || 'N/A'}</div>
+            <div className="text-sm font-medium text-navy-900">{row.profile?.full_name || row.full_name || 'N/A'}</div>
             <div className="text-sm text-navy-500">{row.email}</div>
           </div>
         </div>
@@ -449,7 +449,7 @@ export default function RewardsManagement() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Name</label>
-                      <div className="mt-1 p-2 bg-white rounded-md">{selectedUser.profile?.full_name || 'N/A'}</div>
+                      <div className="mt-1 p-2 bg-white rounded-md">{selectedUser.profile?.full_name || selectedUser.full_name || 'N/A'}</div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Email</label>
@@ -570,7 +570,7 @@ export default function RewardsManagement() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-navy-600">Member</p>
-                      <p className="font-medium text-navy-900">{selectedUser.profile?.full_name || selectedUser.email}</p>
+                      <p className="font-medium text-navy-900">{selectedUser.profile?.full_name || selectedUser.full_name || selectedUser.email}</p>
                     </div>
                     <div>
                       <p className="text-sm text-navy-600">Current Balance</p>
@@ -655,7 +655,7 @@ export default function RewardsManagement() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-navy-600">Member</p>
-                      <p className="font-medium text-navy-900">{selectedUser.profile?.full_name || selectedUser.email}</p>
+                      <p className="font-medium text-navy-900">{selectedUser.profile?.full_name || selectedUser.full_name || selectedUser.email}</p>
                     </div>
                     <div>
                       <p className="text-sm text-navy-600">Current Balance</p>

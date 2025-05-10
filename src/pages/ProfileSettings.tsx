@@ -8,7 +8,6 @@ import { toast } from 'react-hot-toast';
 
 interface Profile {
   id: string;
-  email: string;
   full_name: string | null;
   phone: string | null;
   avatar_url: string | null;
@@ -19,7 +18,6 @@ export default function ProfileSettings() {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<Profile>({
     id: '',
-    email: '',
     full_name: '',
     phone: '',
     avatar_url: null
@@ -42,46 +40,69 @@ export default function ProfileSettings() {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
+      // First try to get profile from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, full_name, avatar_url')
         .eq('id', user.id)
         .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // Profile doesn't exist, create it
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert([{
-              id: user.id,
-              email: user.email,
-              full_name: user.full_name || '',
-              updated_at: new Date().toISOString()
-            }])
-            .select()
-            .single();
+      if (userError) {
+        console.error('Error loading from users table:', userError);
+        
+        // If users table fails, try profiles table as fallback
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
 
-          if (createError) throw createError;
-          if (newProfile) {
-            setProfile({
-              id: newProfile.id,
-              email: user.email,
-              full_name: newProfile.full_name,
-              phone: newProfile.phone,
-              avatar_url: newProfile.avatar_url
-            });
+        if (profileError) {
+          if (profileError.code === 'PGRST116') {
+            // Profile doesn't exist, create it
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert([{
+                id: user.id,
+                full_name: user.full_name || '',
+                updated_at: new Date().toISOString()
+              }])
+              .select()
+              .single();
+
+            if (createError) throw createError;
+            if (newProfile) {
+              setProfile({
+                id: newProfile.id,
+                full_name: newProfile.full_name,
+                phone: newProfile.phone,
+                avatar_url: newProfile.avatar_url
+              });
+            }
+          } else {
+            throw profileError;
           }
-        } else {
-          throw error;
+        } else if (profileData) {
+          setProfile({
+            id: profileData.id,
+            full_name: profileData.full_name,
+            phone: profileData.phone,
+            avatar_url: profileData.avatar_url
+          });
         }
-      } else if (data) {
+      } else if (userData) {
+        // Get phone from profiles if available
+        const { data: phoneData } = await supabase
+          .from('profiles')
+          .select('phone')
+          .eq('id', user.id)
+          .maybeSingle();
+          
         setProfile({
-          id: data.id,
-          email: user.email,
-          full_name: data.full_name,
-          phone: data.phone,
-          avatar_url: data.avatar_url
+          id: userData.id,
+          full_name: userData.full_name,
+          phone: phoneData?.phone || null,
+          avatar_url: userData.avatar_url
         });
       }
     } catch (error) {
@@ -142,13 +163,32 @@ export default function ProfileSettings() {
         .from('avatars')
         .getPublicUrl(filePath);
 
-      // Update profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
+      // Update profile in both tables
+      const updates = { avatar_url: publicUrl };
+      
+      // Update users table
+      const { error: usersError } = await supabase
+        .from('users')
+        .update(updates)
         .eq('id', user?.id);
-
-      if (updateError) throw updateError;
+        
+      if (usersError) {
+        console.error('Error updating users table:', usersError);
+      }
+      
+      // Update profiles table
+      const { error: profilesError } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user?.id);
+        
+      if (profilesError) {
+        console.error('Error updating profiles table:', profilesError);
+      }
+      
+      if (usersError && profilesError) {
+        throw new Error('Failed to update profile in both tables');
+      }
 
       setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
       toast.success('Avatar updated successfully');
@@ -176,13 +216,32 @@ export default function ProfileSettings() {
         }
       }
 
-      // Update profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: null })
+      // Update profile in both tables
+      const updates = { avatar_url: null };
+      
+      // Update users table
+      const { error: usersError } = await supabase
+        .from('users')
+        .update(updates)
         .eq('id', user?.id);
-
-      if (updateError) throw updateError;
+        
+      if (usersError) {
+        console.error('Error updating users table:', usersError);
+      }
+      
+      // Update profiles table
+      const { error: profilesError } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user?.id);
+        
+      if (profilesError) {
+        console.error('Error updating profiles table:', profilesError);
+      }
+      
+      if (usersError && profilesError) {
+        throw new Error('Failed to update profile in both tables');
+      }
 
       setProfile(prev => ({ ...prev, avatar_url: null }));
       toast.success('Avatar removed successfully');
@@ -200,7 +259,20 @@ export default function ProfileSettings() {
     try {
       setLoading(true);
 
-      const { error } = await supabase
+      // Update users table
+      const { error: usersError } = await supabase
+        .from('users')
+        .update({
+          full_name: profile.full_name?.trim()
+        })
+        .eq('id', user?.id);
+        
+      if (usersError) {
+        console.error('Error updating users table:', usersError);
+      }
+      
+      // Update profiles table
+      const { error: profilesError } = await supabase
         .from('profiles')
         .update({
           full_name: profile.full_name?.trim(),
@@ -208,8 +280,14 @@ export default function ProfileSettings() {
           updated_at: new Date().toISOString()
         })
         .eq('id', user?.id);
-
-      if (error) throw error;
+        
+      if (profilesError) {
+        console.error('Error updating profiles table:', profilesError);
+      }
+      
+      if (usersError && profilesError) {
+        throw new Error('Failed to update profile in both tables');
+      }
 
       toast.success('Profile updated successfully');
     } catch (error) {
@@ -277,7 +355,7 @@ export default function ProfileSettings() {
                 <Mail className="h-5 w-5 text-gray-400" />
                 <Input
                   type="email"
-                  value={profile.email}
+                  value={user?.email || ''}
                   disabled={true}
                   className="bg-gray-50"
                   placeholder="Your email is managed through authentication"
