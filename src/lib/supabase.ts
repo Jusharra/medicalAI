@@ -42,6 +42,18 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
               statusText: response.statusText,
               attempt: attempt + 1
             });
+            
+            // For auth errors, try to get more detailed error information
+            if (url.toString().includes('/auth/')) {
+              try {
+                const errorData = await response.clone().json();
+                console.error('Auth error details:', errorData);
+              } catch (e) {
+                // If we can't parse the JSON, just log the error
+                console.error('Could not parse auth error response');
+              }
+            }
+            
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           return response;

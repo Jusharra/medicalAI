@@ -53,6 +53,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   signIn: async (email, password) => {
     try {
       await clearSupabaseCache();
+      
+      // Log the attempt for debugging
+      console.log(`Attempting to sign in with email: ${email.substring(0, 3)}...`);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -83,6 +87,30 @@ export const useAuthStore = create<AuthState>((set) => ({
       return { error: null, data: { user: userData } };
     } catch (error) {
       console.error('Sign in error:', error);
+      
+      // Check for specific error types to provide better user feedback
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          return { 
+            error: { 
+              message: 'Network error. Please check your internet connection and try again.',
+              isNetworkError: true
+            }, 
+            data: null 
+          };
+        }
+        
+        if (error.message.includes('Invalid login credentials')) {
+          return { 
+            error: { 
+              message: 'Invalid email or password. Please try again.',
+              isCredentialsError: true
+            }, 
+            data: null 
+          };
+        }
+      }
+      
       return { error, data: null };
     }
   },
