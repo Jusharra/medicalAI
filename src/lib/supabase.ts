@@ -34,13 +34,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
       for (let attempt = 0; attempt < retries; attempt++) {
         try {
-          console.log(`Supabase request attempt ${attempt + 1}:`, {
-            url: url.toString(),
-            method: config?.method || 'GET'
-          });
-          
           const response = await fetch(url, config);
-          
           if (!response.ok) {
             console.error(`HTTP error! status: ${response.status}`, {
               url: url.toString(),
@@ -62,21 +56,11 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             
             throw new Error(`HTTP error! status: ${response.status}`);
           }
-          
-          console.log(`Supabase request successful (attempt ${attempt + 1})`);
           return response;
         } catch (error) {
-          console.error(`Supabase request failed (attempt ${attempt + 1}):`, error);
-          
-          if (attempt === retries - 1) {
-            console.error('Max retries exceeded for Supabase request');
-            throw error;
-          }
-          
+          if (attempt === retries - 1) throw error;
           // Exponential backoff
-          const delay = baseDelay * Math.pow(2, attempt);
-          console.log(`Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise(resolve => setTimeout(resolve, baseDelay * Math.pow(2, attempt)));
         }
       }
       throw new Error('Max retries exceeded');
@@ -147,19 +131,15 @@ export const flushCache = async (retries = 3, delay = 1000) => {
 export const checkSupabaseConnection = async (retries = 3, delay = 1000) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      console.log(`Checking Supabase connection (attempt ${attempt})...`);
-      
       // Try a simple query to check connection
       const { error } = await supabase
         .from('users')
         .select('id', { count: 'exact', head: true });
         
       if (error) {
-        console.error(`Connection check failed:`, error);
         throw error;
       }
       
-      console.log(`Supabase connection successful (attempt ${attempt})`);
       return { 
         connected: true,
         attempt,

@@ -233,13 +233,9 @@ export default function AuthForm() {
         const { error: signInError } = await signIn(email, password);
         if (signInError) {
           if (signInError.message.includes('Invalid login credentials')) {
-            throw new Error('Invalid email or password. Please check your credentials and try again.');
+            throw new Error('Invalid email or password. Please try again.');
           } else if (signInError.message.includes('Failed to fetch')) {
             throw new Error('Network error. Please check your internet connection and try again.');
-          } else if (signInError.isNetworkError) {
-            throw new Error('Network error. Please check your internet connection and try again.');
-          } else if (signInError.isCredentialsError) {
-            throw new Error('Invalid email or password. Please check your credentials and try again.');
           } else {
             throw signInError;
           }

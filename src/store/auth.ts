@@ -32,12 +32,55 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (error) throw error;
       
       if (session?.user) {
-        // Create basic user object from auth data
+        // Get user role from profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, full_name')
+          .eq('id', session.user.id)
+          .single();
+          
+        // If profile lookup fails, try users table as fallback
+        if (profileError) {
+          console.warn('Profile lookup failed, trying users table:', profileError);
+          
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('role, full_name')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (userError) {
+            console.warn('Users table lookup failed:', userError);
+            // Use metadata as last resort
+            const userData = {
+              id: session.user.id,
+              email: session.user.email || '',
+              role: (session.user.user_metadata?.role || 'member') as 'member' | 'admin' | 'partner',
+              full_name: session.user.user_metadata?.full_name || ''
+            };
+            
+            set({ user: userData, loading: false });
+            return;
+          }
+          
+          // Create user data from users table
+          const userDataFromTable = {
+            id: session.user.id,
+            email: session.user.email || '',
+            role: (userData?.role || 'member') as 'member' | 'admin' | 'partner',
+            full_name: userData?.full_name || session.user.user_metadata?.full_name || ''
+          };
+          
+          set({ user: userDataFromTable, loading: false });
+          return;
+        }
+        
+        // Create user data from profile
         const userData = {
           id: session.user.id,
           email: session.user.email || '',
-          role: (session.user.user_metadata?.role || 'member') as 'member' | 'admin' | 'partner',
-          full_name: session.user.user_metadata?.full_name || ''
+          role: (profileData?.role || 'member') as 'member' | 'admin' | 'partner',
+          full_name: profileData?.full_name || session.user.user_metadata?.full_name || ''
         };
         
         set({ user: userData, loading: false });
@@ -75,12 +118,55 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw new Error('No user data returned');
       }
 
-      // Create user data object from auth data
+      // Get user role from profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', data.user.id)
+        .single();
+        
+      // If profile lookup fails, try users table as fallback
+      if (profileError) {
+        console.warn('Profile lookup failed, trying users table:', profileError);
+        
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('role, full_name')
+          .eq('id', data.user.id)
+          .single();
+          
+        if (userError) {
+          console.warn('Users table lookup failed, using metadata:', userError);
+          // Use metadata as last resort
+          const userDataFromMeta = {
+            id: data.user.id,
+            email: data.user.email || '',
+            role: (data.user.user_metadata?.role || 'member') as 'member' | 'admin' | 'partner',
+            full_name: data.user.user_metadata?.full_name || ''
+          };
+          
+          set({ user: userDataFromMeta });
+          return { error: null, data: { user: userDataFromMeta } };
+        }
+        
+        // Create user data from users table
+        const userDataFromTable = {
+          id: data.user.id,
+          email: data.user.email || '',
+          role: (userData?.role || 'member') as 'member' | 'admin' | 'partner',
+          full_name: userData?.full_name || data.user.user_metadata?.full_name || ''
+        };
+        
+        set({ user: userDataFromTable });
+        return { error: null, data: { user: userDataFromTable } };
+      }
+      
+      // Create user data from profile
       const userData = {
         id: data.user.id,
         email: data.user.email || '',
-        role: (data.user.user_metadata?.role || 'member') as 'member' | 'admin' | 'partner',
-        full_name: data.user.user_metadata?.full_name || ''
+        role: (profileData?.role || 'member') as 'member' | 'admin' | 'partner',
+        full_name: profileData?.full_name || data.user.user_metadata?.full_name || ''
       };
 
       set({ user: userData });
@@ -103,7 +189,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         if (error.message.includes('Invalid login credentials')) {
           return { 
             error: { 
-              message: 'Invalid email or password. Please check your credentials and try again.',
+              message: 'Invalid email or password. Please try again.',
               isCredentialsError: true
             }, 
             data: null 
@@ -132,6 +218,19 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (error) throw error;
       if (!data.user) throw new Error('No user data returned');
+
+      // Create profile record for the new user
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: data.user.id,
+          full_name: fullName,
+          role: 'member'
+        }]);
+        
+      if (profileError) {
+        console.warn('Failed to create profile record:', profileError);
+      }
 
       toast.success('Registration successful! Please check your email to confirm your account.');
       return { error: null };
@@ -182,12 +281,55 @@ export const useAuthStore = create<AuthState>((set) => ({
 supabase.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN' && session?.user) {
     try {
-      // Create user data object from auth data
+      // Get user role from profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', session.user.id)
+        .single();
+        
+      // If profile lookup fails, try users table as fallback
+      if (profileError) {
+        console.warn('Profile lookup failed in auth state change, trying users table:', profileError);
+        
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('role, full_name')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (userError) {
+          console.warn('Users table lookup failed in auth state change, using metadata:', userError);
+          // Use metadata as last resort
+          const userDataFromMeta = {
+            id: session.user.id,
+            email: session.user.email || '',
+            role: (session.user.user_metadata?.role || 'member') as 'member' | 'admin' | 'partner',
+            full_name: session.user.user_metadata?.full_name || ''
+          };
+          
+          useAuthStore.getState().setUser(userDataFromMeta);
+          return;
+        }
+        
+        // Create user data from users table
+        const userDataFromTable = {
+          id: session.user.id,
+          email: session.user.email || '',
+          role: (userData?.role || 'member') as 'member' | 'admin' | 'partner',
+          full_name: userData?.full_name || session.user.user_metadata?.full_name || ''
+        };
+        
+        useAuthStore.getState().setUser(userDataFromTable);
+        return;
+      }
+      
+      // Create user data from profile
       const userData = {
         id: session.user.id,
         email: session.user.email || '',
-        role: (session.user.user_metadata?.role || 'member') as 'member' | 'admin' | 'partner',
-        full_name: session.user.user_metadata?.full_name || ''
+        role: (profileData?.role || 'member') as 'member' | 'admin' | 'partner',
+        full_name: profileData?.full_name || session.user.user_metadata?.full_name || ''
       };
 
       useAuthStore.getState().setUser(userData);
