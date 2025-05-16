@@ -255,7 +255,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   resetPassword: async (email) => {
     try {
       await clearSupabaseCache();
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
       return { error };
     } catch (error) {
       console.error('Reset password error:', error);
