@@ -103,7 +103,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         if (error.message.includes('Invalid login credentials')) {
           return { 
             error: { 
-              message: 'Invalid email or password. Please try again.',
+              message: 'Invalid email or password. Please check your credentials and try again.',
               isCredentialsError: true
             }, 
             data: null 
